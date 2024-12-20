@@ -3,19 +3,24 @@
     "pipeline_1": {
       "preprocessing": {
         "tokenize": {
-          "function": "tokenize"
+          "function": "tokenize",
+          "async": true
         },
         "normalize": {
-          "function": "normalize"
+          "function": "normalize",
+          "async": false
         },
         "remove_stopwords": {
-          "function": "remove_stopwords"
+          "function": "remove_stopwords",
+          "async": true
         },
         "stem": {
-          "function": "stem"
+          "function": "stem",
+          "async": false
         },
         "lemmatize": {
-          "function": "lemmatize"
+          "function": "lemmatize",
+          "async": true
         }
       },
       "analysis": [
@@ -24,14 +29,16 @@
           "params": {},
           "metrics": {
             "accuracy_threshold": 0.95
-          }
+          },
+          "async": true
         },
         {
           "task": "ner",
           "params": {},
           "metrics": {
             "accuracy_threshold": 0.90
-          }
+          },
+          "async": false
         },
         {
           "task": "keyword_extraction",
@@ -41,31 +48,37 @@
           },
           "metrics": {
             "precision_threshold": 0.80
-          }
+          },
+          "async": true
         }
       ],
       "postprocessing": {
         "filter_results": {
-          "function": "filter_results"
+          "function": "filter_results",
+          "async": false
         },
         "aggregate_results": {
-          "function": "aggregate_results"
+          "function": "aggregate_results",
+          "async": true
         },
         "export_results": {
           "function": "export_results",
           "params": {
             "path": "./pipeline1_results.csv"
-          }
+          },
+          "async": false
         }
       }
     },
     "pipeline_2": {
       "preprocessing": {
         "tokenize": {
-          "function": "tokenize"
+          "function": "tokenize",
+          "async": true
         },
         "remove_stopwords": {
-          "function": "remove_stopwords"
+          "function": "remove_stopwords",
+          "async": false
         }
       },
       "analysis": [
@@ -74,7 +87,8 @@
           "params": {},
           "metrics": {
             "sentiment_score_threshold": 0.75
-          }
+          },
+          "async": true
         }
       ],
       "postprocessing": {
@@ -82,7 +96,8 @@
           "function": "export_results",
           "params": {
             "path": "./pipeline2_results.csv"
-          }
+          },
+          "async": true
         }
       }
     }
