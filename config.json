@@ -4,42 +4,27 @@
       "preprocessing": {
         "tokenize": {
           "function": "tokenize",
-          "async": true
+          "async": true,
+          "params": {
+            "param1": "value1"
+          }
         },
         "normalize": {
           "function": "normalize",
-          "async": false
+          "async": false,
+          "params": {
+            "param1": "value1"
+          }
         },
         "remove_stopwords": {
           "function": "remove_stopwords",
-          "async": true
-        },
-        "stem": {
-          "function": "stem",
-          "async": false
-        },
-        "lemmatize": {
-          "function": "lemmatize",
-          "async": true
+          "async": true,
+          "params": {
+            "param1": "value1"
+          }
         }
       },
       "analysis": [
-        {
-          "task": "pos_tagging",
-          "params": {},
-          "metrics": {
-            "accuracy_threshold": 0.95
-          },
-          "async": true
-        },
-        {
-          "task": "ner",
-          "params": {},
-          "metrics": {
-            "accuracy_threshold": 0.90
-          },
-          "async": false
-        },
         {
           "task": "keyword_extraction",
           "params": {
@@ -53,51 +38,12 @@
         }
       ],
       "postprocessing": {
-        "filter_results": {
-          "function": "filter_results",
-          "async": false
-        },
-        "aggregate_results": {
-          "function": "aggregate_results",
-          "async": true
-        },
         "export_results": {
           "function": "export_results",
           "params": {
             "path": "./pipeline1_results.csv"
           },
           "async": false
-        }
-      }
-    },
-    "pipeline_2": {
-      "preprocessing": {
-        "tokenize": {
-          "function": "tokenize",
-          "async": true
-        },
-        "remove_stopwords": {
-          "function": "remove_stopwords",
-          "async": false
-        }
-      },
-      "analysis": [
-        {
-          "task": "sentiment_analysis",
-          "params": {},
-          "metrics": {
-            "sentiment_score_threshold": 0.75
-          },
-          "async": true
-        }
-      ],
-      "postprocessing": {
-        "export_results": {
-          "function": "export_results",
-          "params": {
-            "path": "./pipeline2_results.csv"
-          },
-          "async": true
         }
       }
     }

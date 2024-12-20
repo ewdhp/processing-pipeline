@@ -7,33 +7,44 @@ import pandas as pd
 import importlib.util
 import logging
 import asyncio
+import glob
+import re
 
 # Configure logging
 logging.basicConfig(filename='pipeline.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class TextProcessingPipeline:
-    def __init__(self, config_file):
+    def __init__(self, config_file, max_files):
         self.config_file = config_file
         self.config = self.load_config(config_file)
         self.nlp = spacy.load("en_core_web_sm")
         self.stop_words = set(stopwords.words('english'))
         self.stemmer = PorterStemmer()
         self.vectorizer = TfidfVectorizer()
-        self.additional_modules = self.load_additional_modules(self.config.get("additional_files", []))
         self.max_retries = 3
+        self.max_files = max_files
+        self.additional_modules = self.load_additional_modules()
 
     def load_config(self, file_path):
         with open(file_path, 'r') as f:
             return json.load(f)
 
-    def load_additional_modules(self, files):
+    def load_additional_modules(self):
         modules = {}
-        for file in files:
-            module_name = file.replace('.py', '')
-            spec = importlib.util.spec_from_file_location(module_name, file)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            modules[module_name] = module
+        for i in range(self.max_files):
+            file_pattern = f'*_{i}.py'
+            files = glob.glob(file_pattern)
+            pattern = re.compile(r'^[a-zA-Z0-9]+_[0-9]+\.py$')
+            for file in files:
+                if pattern.match(file):
+                    module_name = file.replace('.py', '')
+                    try:
+                        spec = importlib.util.spec_from_file_location(module_name, file)
+                        module = importlib.util.module_from_spec(spec)
+                        spec.loader.exec_module(module)
+                        modules[module_name] = module
+                    except FileNotFoundError:
+                        logging.warning(f"File {file} not found. Skipping.")
         return modules
 
     def get_function(self, func_name):
@@ -51,7 +62,8 @@ class TextProcessingPipeline:
         if "postprocessing" in pipeline_config:
             results = await self.postprocess(results, pipeline_config["postprocessing"])
         
-        self.config = self.load_config(self.config_file)
+        self.config = self.load_config(self.config_file)  # Reload configuration file
+        self.additional_modules = self.load_additional_modules()  # Reload additional modules
         return results
 
     async def preprocess(self, tokens, preprocess_config):
@@ -60,9 +72,9 @@ class TextProcessingPipeline:
             func_name = config["function"]
             func = self.get_function(func_name)
             if config.get("async", False):
-                tasks.append(func(tokens))
+                tasks.append(func(tokens, **config.get("params", {})))
             else:
-                tokens = func(tokens)
+                tokens = func(tokens, **config.get("params", {}))
                 logging.info(f"Preprocessing step '{func_name}' completed.")
         
         if tasks:
@@ -99,8 +111,7 @@ class TextProcessingPipeline:
         if tasks:
             async_results = await asyncio.gather(*tasks)
             for async_result in async_results:
-                if self.check_metrics(async_result, metrics):
-                    results[task] = async_result
+                results.update(async_result)
 
         return results
 
@@ -152,5 +163,5 @@ config = json.load(open(config_file))
 text = "The quick brown fox jumps over the lazy dog."
 
 # Initialize and run pipeline
-pipeline = TextProcessingPipeline(config_file)
+pipeline = TextProcessingPipeline(config_file, max_files=10)  # Set your max value here
 asyncio.run(pipeline.run(text))
