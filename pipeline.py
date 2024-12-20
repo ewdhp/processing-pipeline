@@ -47,90 +47,71 @@ class TextProcessingPipeline:
                         logging.warning(f"File {file} not found. Skipping.")
         return modules
 
-    def get_function(self, func_name):
+    def get_functions(self, base_func_name):
+        func_list = []
+        regex = re.compile(rf"{base_func_name}(_\w+)?$")
         for module in self.additional_modules.values():
-            if hasattr(module, func_name):
-                return getattr(module, func_name)
-        raise AttributeError(f"Function '{func_name}' not found in additional modules.")
+            func_list.extend([getattr(module, fn) for fn in dir(module) if regex.match(fn) and callable(getattr(module, fn))])
+        return func_list
 
     async def run_pipeline(self, text, pipeline_config):
         tokens = text
-        if "preprocessing" in pipeline_config:
-            tokens = await self.preprocess(tokens, pipeline_config["preprocessing"])
-        if "analysis" in pipeline_config:
-            results = await self.analyze(tokens, pipeline_config["analysis"])
-        if "postprocessing" in pipeline_config:
-            results = await self.postprocess(results, pipeline_config["postprocessing"])
+        flow = pipeline_config.get("flow", ["preprocessing", "analysis", "postprocessing"])
+        results = None
+        
+        for stage in flow:
+            if stage in pipeline_config:
+                stage_config = pipeline_config[stage]
+                if stage == "preprocessing":
+                    tokens = await self.run_stage(tokens, stage_config)
+                elif stage == "analysis":
+                    results = await self.run_stage(tokens, stage_config)
+                elif stage == "postprocessing":
+                    results = await self.run_stage(results, stage_config)
         
         self.config = self.load_config(self.config_file)  # Reload configuration file
         self.additional_modules = self.load_additional_modules()  # Reload additional modules
         return results
 
-    async def preprocess(self, tokens, preprocess_config):
+    async def run_stage(self, data, stage_config):
         tasks = []
-        for step, config in preprocess_config.items():
+        for step, config in stage_config.items():
             func_name = config["function"]
-            func = self.get_function(func_name)
-            if config.get("async", False):
-                tasks.append(func(tokens, **config.get("params", {})))
+            functions = self.get_functions(func_name)
+            if len(functions) > 1:  # Multiple functions found
+                tasks.append(self.run_multiple_functions(data, functions, config.get("params", {})))
             else:
-                tokens = func(tokens, **config.get("params", {}))
-                logging.info(f"Preprocessing step '{func_name}' completed.")
+                func = functions[0]
+                if config.get("async", False):
+                    tasks.append(func(data, **config.get("params", {})))
+                else:
+                    data = func(data, **config.get("params", {}))
+                    logging.info(f"Step '{func_name}' completed.")
         
         if tasks:
             results = await asyncio.gather(*tasks)
             for result in results:
-                tokens = result
-
-        return tokens
-
-    async def analyze(self, tokens, analysis_config):
-        tasks = []
-        results = {}
-        for task_config in analysis_config:
-            task = task_config["task"]
-            params = task_config.get("params", {})
-            metrics = task_config.get("metrics", {})
-            func = self.get_function(task)
-            if task_config.get("async", False):
-                tasks.append(func(tokens, **params))
-            else:
-                for attempt in range(self.max_retries):
-                    task_results = func(tokens, **params)
-                    if self.check_metrics(task_results, metrics):
-                        results[task] = task_results
-                        logging.info(f"Analysis task '{task}' completed successfully.")
-                        break
-                    else:
-                        logging.warning(f"Analysis task '{task}' did not meet metrics on attempt {attempt + 1}.")
+                if isinstance(result, list):
+                    data = self.evaluate_results(result, config.get("metrics", {}))
                 else:
-                    error_message = f"Analysis task '{task}' failed to meet metrics after {self.max_retries} attempts."
-                    self.log_error(error_message)
-                    results[task] = {"error": error_message}
-        
-        if tasks:
-            async_results = await asyncio.gather(*tasks)
-            for async_result in async_results:
-                results.update(async_result)
+                    data = result
+        return data
 
+    async def run_multiple_functions(self, data, functions, params):
+        tasks = [fn(data, **params) for fn in functions]
+        results = await asyncio.gather(*tasks)
         return results
 
-    async def postprocess(self, results, postprocess_config):
-        tasks = []
-        for step, config in postprocess_config.items():
-            func_name = config["function"]
-            params = config.get("params", {})
-            func = self.get_function(func_name)
-            if config.get("async", False):
-                tasks.append(func(results, **params))
-            else:
-                results = func(results, **params)
-                logging.info(f"Postprocessing step '{func_name}' completed.")
-        
-        if tasks:
-            results = await asyncio.gather(*tasks)
-
-        return results
+    def evaluate_results(self, results, metrics):
+        for metric, threshold in metrics.items():
+            for result in results:
+                if metric == "accuracy_threshold" and result.get("accuracy", 0) < threshold:
+                    return False
+                if metric == "precision_threshold" and result.get("precision", 0) < threshold:
+                    return False
+                if metric == "sentiment_score_threshold" and result.get("sentiment_score", 0) < threshold:
+                    return False
+        return True
 
     def check_metrics(self, results, metrics):
         for metric, threshold in metrics.items():

@@ -19,12 +19,23 @@ async def normalize(tokens, **kwargs):
 async def remove_stopwords(tokens, **kwargs):
     return [token for token in tokens if token not in stop_words]
 
+async def remove_stopwords_some_algorithm(tokens, **kwargs):
+    # An example of an alternative implementation
+    custom_stop_words = set(["quick", "brown", "lazy"])
+    return [token for token in tokens if token not in custom_stop_words]
+
 async def stem(tokens, **kwargs):
     return [stemmer.stem(token) for token in tokens]
 
 async def lemmatize(tokens, **kwargs):
     doc = nlp(' '.join(tokens))
     return [token.lemma_ for token in doc]
+
+# Overloaded function to handle multiple async functions
+async def run_multiple_functions(data, functions, params):
+    tasks = [fn(data, **params) for fn in functions]
+    results = await asyncio.gather(*tasks)
+    return results
 
 # Analysis Functions
 async def keyword_extraction(tokens, method="tfidf", top_n=10):

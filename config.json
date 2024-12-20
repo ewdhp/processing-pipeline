@@ -1,49 +1,61 @@
 {
+  "flow": ["initialization", "data_cleaning", "feature_engineering", "model_training", "model_evaluation"],
   "pipelines": {
     "pipeline_1": {
-      "preprocessing": {
-        "tokenize": {
-          "function": "tokenize",
+      "initialization": {
+        "load_data": {
+          "function": "load_data",
           "async": true,
           "params": {
-            "param1": "value1"
-          }
-        },
-        "normalize": {
-          "function": "normalize",
-          "async": false,
-          "params": {
-            "param1": "value1"
-          }
-        },
-        "remove_stopwords": {
-          "function": "remove_stopwords",
-          "async": true,
-          "params": {
-            "param1": "value1"
+            "file_path": "data/input.csv"
           }
         }
       },
-      "analysis": [
-        {
-          "task": "keyword_extraction",
+      "data_cleaning": {
+        "remove_duplicates": {
+          "function": "remove_duplicates",
+          "async": true,
           "params": {
-            "method": "tfidf",
-            "top_n": 10
+            "param1": "value1"
+          }
+        },
+        "impute_missing_values": {
+          "function": "impute_missing_values",
+          "async": true,
+          "params": {
+            "method": "mean"
+          }
+        }
+      },
+      "feature_engineering": {
+        "normalize_features": {
+          "function": ["normalize_features", "normalize_features_alternate"],
+          "async": true,
+          "params": {
+            "param1": "value1"
           },
           "metrics": {
-            "precision_threshold": 0.80
-          },
-          "async": true
+            "accuracy_threshold": 0.95
+          }
         }
-      ],
-      "postprocessing": {
-        "export_results": {
-          "function": "export_results",
+      },
+      "model_training": {
+        "train_model": {
+          "function": "train_model",
+          "async": true,
           "params": {
-            "path": "./pipeline1_results.csv"
-          },
-          "async": false
+            "model_type": "RandomForest",
+            "n_estimators": 100
+          }
+        }
+      },
+      "model_evaluation": {
+        "evaluate_model": {
+          "function": "evaluate_model",
+          "async": true,
+          "params": {
+            "metrics": ["accuracy", "precision", "recall"]
+          }
         }
       }
     }
