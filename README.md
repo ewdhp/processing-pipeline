@@ -1,7 +1,3 @@
-Here's a detailed markdown (`README.md`) for your text processing pipeline:
-
----
-
 # Text Processing Pipeline
 
 This project implements a configurable, recursive text processing pipeline capable of handling various text analysis tasks. The pipeline is designed to be highly flexible and extensible, allowing for multiple stages of preprocessing, analysis, and post-processing, with dynamic function calls and parameter handling.
