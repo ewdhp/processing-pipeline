@@ -1,0 +1,90 @@
+{
+  "pipelines": {
+    "pipeline_1": {
+      "preprocessing": {
+        "tokenize": {
+          "function": "tokenize"
+        },
+        "normalize": {
+          "function": "normalize"
+        },
+        "remove_stopwords": {
+          "function": "remove_stopwords"
+        },
+        "stem": {
+          "function": "stem"
+        },
+        "lemmatize": {
+          "function": "lemmatize"
+        }
+      },
+      "analysis": [
+        {
+          "task": "pos_tagging",
+          "params": {},
+          "metrics": {
+            "accuracy_threshold": 0.95
+          }
+        },
+        {
+          "task": "ner",
+          "params": {},
+          "metrics": {
+            "accuracy_threshold": 0.90
+          }
+        },
+        {
+          "task": "keyword_extraction",
+          "params": {
+            "method": "tfidf",
+            "top_n": 10
+          },
+          "metrics": {
+            "precision_threshold": 0.80
+          }
+        }
+      ],
+      "postprocessing": {
+        "filter_results": {
+          "function": "filter_results"
+        },
+        "aggregate_results": {
+          "function": "aggregate_results"
+        },
+        "export_results": {
+          "function": "export_results",
+          "params": {
+            "path": "./pipeline1_results.csv"
+          }
+        }
+      }
+    },
+    "pipeline_2": {
+      "preprocessing": {
+        "tokenize": {
+          "function": "tokenize"
+        },
+        "remove_stopwords": {
+          "function": "remove_stopwords"
+        }
+      },
+      "analysis": [
+        {
+          "task": "sentiment_analysis",
+          "params": {},
+          "metrics": {
+            "sentiment_score_threshold": 0.75
+          }
+        }
+      ],
+      "postprocessing": {
+        "export_results": {
+          "function": "export_results",
+          "params": {
+            "path": "./pipeline2_results.csv"
+          }
+        }
+      }
+    }
+  }
+}
